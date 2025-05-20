@@ -97,7 +97,7 @@ class AdvancedCardChecker:
 
 ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━
 
-[⌬]𝐂𝐇𝐄𝐂𝐊𝐄𝐃 𝐁𝐘 -» @{username}
+[⌬]𝐂𝐇𝐄𝐂𝐊𝐄𝐃 𝐁𝐘 -» @fn_only_approved
 [⌬]𝐃𝐄𝐕 -» https://t.me/{self.admin_username}
 [み]𝗕𝗼𝘁 -» @FN_CHECKERR_BOT
 """
