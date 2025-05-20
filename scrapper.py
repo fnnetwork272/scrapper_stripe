@@ -13,8 +13,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # API Configuration
-api_id = 25031007  # Replace with your actual API ID
-api_hash = "68029e5e2d9c4dd11f600e1692c3acaa"  # Replace with your actual API hash
+api_id = 21144871  # Replace with your actual API ID
+api_hash = "787bc27a6780f4c19c7f8567835b7cef"  # Replace with your actual API hash
 session_name = "cc_scraper"
 # Add your session string here (optional); leave as None if using session file or manual login
 session_string = None  # Replace with your session string, e.g., "1BVtsO..."
