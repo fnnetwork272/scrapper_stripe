@@ -1,0 +1,10 @@
+http://tickets:proxyon145@196.196.23.136:12345  
+http://tickets:proxyon145@107.173.112.245:12345  
+http://tickets:proxyon145@161.0.1.13:12345  
+http://tickets:proxyon145@107.173.112.211:12345  
+http://tickets:proxyon145@23.81.230.134:12345  
+http://tickets:proxyon145@192.3.143.46:12345  
+http://tickets:proxyon145@23.95.239.230:12345  
+http://tickets:proxyon145@107.175.37.77:12345  
+http://tickets:proxyon145@168.228.46.128:12345    
+http://tickets:proxyon145@5.157.5.100:12345  

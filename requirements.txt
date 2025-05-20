@@ -1,0 +1,13 @@
+python-telegram-bot
+colorama
+aiohttp
+pymongo
+python-dateutil
+flask
+requests
+pycountry
+python-telegram-bot
+beautifulsoup4
+nest_asyncio
+pyuseragents
+telethon
