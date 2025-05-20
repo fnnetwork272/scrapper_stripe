@@ -18,7 +18,7 @@ class AdvancedCardChecker:
     def __init__(self):
         self.proxy_pool = []
         self.load_proxies()
-        self.request_timeout = aiohttp.ClientTimeout(total=70)
+        self.request_timeout = aiohttp.ClientTimeout(total=80)
         self.max_concurrent = 3
         self.stripe_key = "pk_live_51JwIw6IfdFOYHYTxyOQAJTIntTD1bXoGPj6AEgpjseuevvARIivCjiYRK9nUYI1Aq63TQQ7KN1uJBUNYtIsRBpBM0054aOOMJN"
         self.bin_cache = {}
@@ -198,7 +198,7 @@ class AdvancedCardChecker:
 
     async def check_card(self, combo):
         """Standalone method to check a single card and return formatted result if approved."""
-        user_id = "scraper"  # Dummy user_id for scrapper checks
+        user_id = "fn_only_approved"  # Dummy user_id for scrapper checks
         semaphore = asyncio.Semaphore(self.max_concurrent)
         result = await self.process_line(user_id, combo, semaphore)
         return result
