@@ -20,7 +20,7 @@ session_name = "cc_scraper"
 session_string = "1BVtsOHkBu0ent20dDvyFbnqLINwwuVnFfItBb2AkZL7bcCw1BRVRbx9Dkvd3LC7YBBTPsG8SNKj1sBek1S2XbBSBzjDDP2TphAUNz40amT3x2gqAWgiugobjkACFCMousaLQFLJD7JmDfsxdOaSaOwkY1R9dVPfUXvVSLtR2DfHKs7blkbYfK_KU5CvRjpIwUB9Hx9htDzPUZyL8_vdb8xtVQSr44uZz2-fghODE3qU-tHclX0sUSbzO2rM4Pjp4A7h1kwm0dSjs9_DHa1fDz8DJcs3_AY6A0nFuYmVD_ker3BK-2k5p1i2iLNhi2KgKjpSJY7dRNa_nHssHuDsVLyVFuC3ReI8="  # Replace with your session string, e.g., "1BVtsO..."
 
 # Sources Configuration - add as many as needed
-source_groups = [-1002410570317]  # Add source group IDs if needed
+source_groups = [-1002410570317, -1001878543352]  # Add source group IDs if needed
 source_channels = []  # Add source channel IDs if needed
 
 # Target channels where approved CCs will be sent
