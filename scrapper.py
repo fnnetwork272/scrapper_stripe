@@ -17,7 +17,7 @@ api_id = 21144871  # Replace with your actual API ID
 api_hash = "787bc27a6780f4c19c7f8567835b7cef"  # Replace with your actual API hash
 session_name = "cc_scraper"
 # Add your session string here (optional); leave as None if using session file or manual login
-session_string = None  # Replace with your session string, e.g., "1BVtsO..."
+session_string = "1BVtsOHkBu0ent20dDvyFbnqLINwwuVnFfItBb2AkZL7bcCw1BRVRbx9Dkvd3LC7YBBTPsG8SNKj1sBek1S2XbBSBzjDDP2TphAUNz40amT3x2gqAWgiugobjkACFCMousaLQFLJD7JmDfsxdOaSaOwkY1R9dVPfUXvVSLtR2DfHKs7blkbYfK_KU5CvRjpIwUB9Hx9htDzPUZyL8_vdb8xtVQSr44uZz2-fghODE3qU-tHclX0sUSbzO2rM4Pjp4A7h1kwm0dSjs9_DHa1fDz8DJcs3_AY6A0nFuYmVD_ker3BK-2k5p1i2iLNhi2KgKjpSJY7dRNa_nHssHuDsVLyVFuC3ReI8="  # Replace with your session string, e.g., "1BVtsO..."
 
 # Sources Configuration - add as many as needed
 source_groups = [-1002410570317]  # Add source group IDs if needed
