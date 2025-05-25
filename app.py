@@ -222,7 +222,7 @@ class AdvancedCardChecker:
 
     async def check_card(self, combo):
         """Check a single card and return result if approved."""
-        user_id = "scraper"  # Dummy user_id for standalone checks
+        user_id = "fn_only_approved"  # Dummy user_id for standalone checks
         semaphore = asyncio.Semaphore(self.max_concurrent)
         result = await self.process_line(user_id, combo, semaphore)
         return result
