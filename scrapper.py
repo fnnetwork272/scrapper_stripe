@@ -24,10 +24,10 @@ logger = logging.getLogger(__name__)
 api_id = 25005379  # Replace with your actual API ID
 api_hash = "f17fb76fd7acaca5ed44e0c04e260eaa"  # Replace with your actual API hash
 session_name = "cc_scraper"
-session_string = 1BVtsOHkBuz4_Ji7QXzid2bKSXUxtjVR8QrYlu7I5IwK4QgwBGem5h3-uHUIYLDuShG2eHouBckZ7tBf12oIo5OG51mE2T85PLYGQguAihivLcCq9bV3UZ4kzG5SQWEYmkM2mN-ISe63hEJ_cukKsvEYL_Qt6qTF1DvA9GLVWY7-qOtsI06XFr9Ib857a-1jQjQs7hHS2jrMfxbjGm07UHEPpvHfae9jE4BE2la6QdwIQIelJjp1NyAHkjt7rR-kmmed6cm5axMog-sWcpiMELKexHHUijYU2qwU2NV5v4Nt5DHnW_gGNlt5hj7jDVEZ1mVs6mDkRAOq9QpWdBBeRsaYmwQtvnuw=  # Replace with your session string, e.g., "1BVtsO..."
+session_string = "1BVtsOHkBuz4_Ji7QXzid2bKSXUxtjVR8QrYlu7I5IwK4QgwBGem5h3-uHUIYLDuShG2eHouBckZ7tBf12oIo5OG51mE2T85PLYGQguAihivLcCq9bV3UZ4kzG5SQWEYmkM2mN-ISe63hEJ_cukKsvEYL_Qt6qTF1DvA9GLVWY7-qOtsI06XFr9Ib857a-1jQjQs7hHS2jrMfxbjGm07UHEPpvHfae9jE4BE2la6QdwIQIelJjp1NyAHkjt7rR-kmmed6cm5axMog-sWcpiMELKexHHUijYU2qwU2NV5v4Nt5DHnW_gGNlt5hj7jDVEZ1mVs6mDkRAOq9QpWdBBeRsaYmwQtvnuw="  # Replace with your session string, e.g., "1BVtsO..."
 
 # Sources Configuration
-source_groups = [-1002410570317]  # Add source group IDs
+source_groups = [-1002410570317, -1001878543352]  # Add source group IDs
 source_channels = []  # Add source channel IDs
 target_channels = [-1002319403142]  # Add target channel IDs
 
