@@ -7,6 +7,7 @@ COPY . .
 RUN apt-get update && apt-get install -y \
     wget \
     unzip \
+    curl \
     libnss3 \
     libgconf-2-4 \
     libxss1 \
