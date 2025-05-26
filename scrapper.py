@@ -2,16 +2,7 @@ import re
 import asyncio
 from telethon import TelegramClient, events
 from telethon.sessions import StringSession
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from bs4 import BeautifulSoup
-import requests
-import time
-import os
-from app import AdvancedCardChecker
+from app import AdvancedCardChecker  # Import AdvancedCardChecker from app.py
 import logging
 
 # Configure logging
@@ -25,12 +16,15 @@ logger = logging.getLogger(__name__)
 api_id = 25005379  # Replace with your actual API ID
 api_hash = "f17fb76fd7acaca5ed44e0c04e260eaa"  # Replace with your actual API hash
 session_name = "cc_scraper"
-session_string = os.getenv("TELEGRAM_SESSION_STRING", "1BVtsOHkBuz4_Ji7QXzid2bKSXUxtjVR8QrYlu7I5IwK4QgwBGem5h3-uHUIYLDuShG2eHouBckZ7tBf12oIo5OG51mE2T85PLYGQguAihivLcCq9bV3UZ4kzG5SQWEYmkM2mN-ISe63hEJ_cukKsvEYL_Qt6qTF1DvA9GLVWY7-qOtsI06XFr9Ib857a-1jQjQs7hHS2jrMfxbjGm07UHEPpvHfae9jE4BE2la6QdwIQIelJjp1NyAHkjt7rR-kmmed6cm5axMog-sWcpiMELKexHHUijYU2qwU2NV5v4Nt5DHnW_gGNlt5hj7jDVEZ1mVs6mDkRAOq9QpWdBBeRsaYmwQtvnuw=")  # Use environment variable for security
+# Add your session string here (optional); leave as None if using session file or manual login
+session_string = "1BVtsOHkBuz4_Ji7QXzid2bKSXUxtjVR8QrYlu7I5IwK4QgwBGem5h3-uHUIYLDuShG2eHouBckZ7tBf12oIo5OG51mE2T85PLYGQguAihivLcCq9bV3UZ4kzG5SQWEYmkM2mN-ISe63hEJ_cukKsvEYL_Qt6qTF1DvA9GLVWY7-qOtsI06XFr9Ib857a-1jQjQs7hHS2jrMfxbjGm07UHEPpvHfae9jE4BE2la6QdwIQIelJjp1NyAHkjt7rR-kmmed6cm5axMog-sWcpiMELKexHHUijYU2qwU2NV5v4Nt5DHnW_gGNlt5hj7jDVEZ1mVs6mDkRAOq9QpWdBBeRsaYmwQtvnuw="  # Replace with your session string, e.g., "1BVtsO..."
 
-# Sources Configuration
-source_groups = [-1002410570317, -1001878543352]  # Add source group IDs
-source_channels = []  # Add source channel IDs
-target_channels = [-1002319403142]  # Add target channel IDs
+# Sources Configuration - add as many as needed
+source_groups = [-1002410570317]  # Add source group IDs if needed
+source_channels = []  # Add source channel IDs if needed
+
+# Target channels where approved CCs will be sent
+target_channels = [-1002319403142]  # Add more channel IDs as needed
 
 # Initialize Telegram client
 if session_string:
@@ -41,17 +35,9 @@ else:
 # Initialize card checker
 card_checker = AdvancedCardChecker()
 
-# Set up Selenium for Render
-selenium_options = Options()
-selenium_options.add_argument('--headless')
-selenium_options.add_argument('--no-sandbox')
-selenium_options.add_argument('--disable-dev-shm-usage')
-selenium_options.binary_location = "/opt/render/project/.render/chrome/google-chrome"
-driver = webdriver.Chrome(options=selenium_options, executable_path="/usr/local/bin/chromedriver")
-
-# CC patterns
+# Enhanced CC patterns to capture more formats
 cc_patterns = [
-        r'(?:𝗖𝗖|CC)\s*➼\s*(\d{13,16})\|(\d{1,2})\|(\d{2,4})\|(\d{3,4})',
+    r'(?:𝗖𝗖|CC)\s*➼\s*(\d{13,16})\|(\d{1,2})\|(\d{2,4})\|(\d{3,4})',
     
     r'[•\*\-]\s*CC\s+(\d{13,16})\|(\d{1,2})\|(\d{2,4})\|(\d{3,4})',
 
@@ -139,55 +125,7 @@ def format_cc(match):
         
     return f"{cc}|{mm}|{yy}|{cvv}"
 
-# Function to log in to Telegram Web
-def login_to_telegram():
-    driver.get("https://web.telegram.org/k/")
-    # Customize login logic (phone number, verification code)
-    time.sleep(10)  # Adjust based on login time
-
-# Function to click the "View Card" button
-async def click_view_card_button():
-    try:
-        button = WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'View Card')]"))
-        )
-        button.click()
-        return True
-    except Exception as e:
-        logger.error(f"Error clicking button: {str(e)}")
-        return False
-
-# Function to get the Telegraph URL
-async def get_telegraph_url():
-    try:
-        original_window = driver.current_window_handle
-        WebDriverWait(driver, 10).until(EC.number_of_windows_to_be(2))
-        for window_handle in driver.window_handles:
-            if window_handle != original_window:
-                driver.switch_to.window(window_handle)
-                break
-        telegraph_url = driver.current_url
-        driver.close()
-        driver.switch_to.window(original_window)
-        return telegraph_url
-    except Exception as e:
-        logger.error(f"Error getting Telegraph URL: {str(e)}")
-        return None
-
-# Function to scrape CC details from Telegraph page
-async def scrape_telegraph_page(telegraph_url):
-    try:
-        response = requests.get(telegraph_url)
-        soup = BeautifulSoup(response.content, 'html.parser')
-        content = soup.find('pre')
-        if content:
-            return content.text
-        return None
-    except Exception as e:
-        logger.error(f"Error scraping Telegraph page: {str(e)}")
-        return None
-
-# Define sources
+# Define sources handler
 def get_sources():
     sources = []
     if source_groups:
@@ -199,67 +137,55 @@ def get_sources():
 # Scraper Event Handler
 @client.on(events.NewMessage(chats=get_sources() if get_sources() else None))
 async def cc_scraper(event):
-    if "⭐ New Drop ⭐" in event.raw_text:
-        try:
-            chat_id = event.chat_id
-            message_id = event.message.id
-            driver.get(f"https://web.telegram.org/k/#?tgaddr=tg://msg?chat_id={chat_id}&message_id={message_id}")
-            if await click_view_card_button():
-                telegraph_url = await get_telegraph_url()
-                if telegraph_url:
-                    text = await scrape_telegraph_page(telegraph_url)
-                    if text:
-                        found_ccs = set()
-                        for pattern in cc_patterns:
-                            for match in re.finditer(pattern, text):
-                                formatted_cc = format_cc(match)
-                                if formatted_cc:
-                                    found_ccs.add(formatted_cc)
-                        if found_ccs:
-                            for cc in found_ccs:
-                                try:
-                                    result = await card_checker.check_card(cc)
-                                    if result:
-                                        message = result['message']
-                                        for channel_id in target_channels:
-                                            try:
-                                                await client.send_message(channel_id, message, parse_mode="HTML")
-                                                logger.info(f"Sent approved CC {cc} to channel {channel_id}")
-                                            except Exception as e:
-                                                logger.error(f"Error sending to channel {channel_id}: {str(e)}")
-                                    else:
-                                        logger.info(f"CC {cc} declined or blacklisted")
-                                except Exception as e:
-                                    logger.error(f"Error checking CC {cc}: {str(e)}")
-                    else:
-                        logger.error("Failed to scrape CC details")
+    text = event.raw_text
+    found_ccs = set()
+
+    for pattern in cc_patterns:
+        for match in re.finditer(pattern, text):
+            formatted_cc = format_cc(match)
+            if formatted_cc:
+                found_ccs.add(formatted_cc)
+
+    if found_ccs:
+        for cc in found_ccs:
+            try:
+                # Check the card using AdvancedCardChecker
+                result = await card_checker.check_card(cc)
+                if result:
+                    # Card is approved, send the formatted message to target channels
+                    message = result['message']
+                    for channel_id in target_channels:
+                        try:
+                            await client.send_message(channel_id, message, parse_mode="HTML")
+                            logger.info(f"Sent approved CC {cc} to channel {channel_id}")
+                        except Exception as e:
+                            logger.error(f"Error sending to channel {channel_id}: {str(e)}")
                 else:
-                    logger.error("Failed to retrieve Telegraph URL")
-            else:
-                logger.error("Failed to click 'View Card' button")
-        except Exception as e:
-            logger.error(f"Error processing message {event.message.id}: {str(e)}")
+                    logger.info(f"CC {cc} declined, not sent to channel")
+            except Exception as e:
+                logger.error(f"Error checking CC {cc}: {str(e)}")
 
 # Run Client
 async def main():
     try:
-        login_to_telegram()
         await client.start()
-        logger.info("CC Scraper started")
+        print("✅ CC Scraper Running...")
+        
         sources = get_sources()
         if sources:
-            logger.info(f"Monitoring {len(sources)} source(s)")
+            print(f"✅ Monitoring {len(sources)} source(s)")
         else:
-            logger.warning("No sources specified")
+            print("⚠️ No sources specified. Will monitor all chats the account has access to.")
+        
         if target_channels:
-            logger.info(f"Sending to {len(target_channels)} channel(s)")
+            print(f"✅ Approved CCs will be sent to {len(target_channels)} channel(s)")
         else:
-            logger.warning("No target channels specified")
+            print("⚠️ No target channels specified. Approved CCs will be printed to console only.")
+        
         await client.run_until_disconnected()
     except Exception as e:
         logger.error(f"Error starting client: {str(e)}")
-    finally:
-        driver.quit()
+        print(f"❌ Failed to start scraper: {str(e)}")
 
 if __name__ == "__main__":
     asyncio.run(main())
