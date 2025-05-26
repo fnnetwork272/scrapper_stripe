@@ -11,3 +11,7 @@ beautifulsoup4
 nest_asyncio
 pyuseragents
 telethon
+selenium
+requests
+beautifulsoup4
+aiohttp
