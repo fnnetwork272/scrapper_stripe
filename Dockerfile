@@ -25,17 +25,20 @@ RUN wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd6
     dpkg -x google-chrome-stable_current_amd64.deb /opt/chrome && \
     rm google-chrome-stable_current_amd64.deb
 
+# Set PATH for Chrome
+ENV PATH="${PATH}:/opt/chrome/opt/google/chrome"
+
 # Install ChromeDriver
-RUN CHROME_VERSION=$(google-chrome --version | grep -oP '\d+\.\d+\.\d+') && \
-    CHROMEDRIVER_VERSION=$(curl -sS https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_VERSION%%.*}) && \
+RUN CHROME_VERSION=$(google-chrome --version | grep -oP '\d+\.\d+\.\d+' || echo "126.0.6478") && \
+    CHROMEDRIVER_VERSION=$(curl -sS https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_VERSION%%.*} || echo "126.0.6478.182") && \
     wget -q https://chromedriver.storage.googleapis.com/${CHROMEDRIVER_VERSION}/chromedriver_linux64.zip && \
     unzip chromedriver_linux64.zip && \
     mv chromedriver /usr/local/bin/ && \
     chmod +x /usr/local/bin/chromedriver && \
     rm chromedriver_linux64.zip
 
-# Set PATH for Chrome and ChromeDriver
-ENV PATH="${PATH}:/opt/chrome/opt/google/chrome:/usr/local/bin"
+# Verify installations
+RUN google-chrome --version && chromedriver --version
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
