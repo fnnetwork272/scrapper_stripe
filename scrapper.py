@@ -10,6 +10,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
 import requests
 import time
+import os
 from app import AdvancedCardChecker
 import logging
 
@@ -24,7 +25,7 @@ logger = logging.getLogger(__name__)
 api_id = 25005379  # Replace with your actual API ID
 api_hash = "f17fb76fd7acaca5ed44e0c04e260eaa"  # Replace with your actual API hash
 session_name = "cc_scraper"
-session_string = "1BVtsOHkBuz4_Ji7QXzid2bKSXUxtjVR8QrYlu7I5IwK4QgwBGem5h3-uHUIYLDuShG2eHouBckZ7tBf12oIo5OG51mE2T85PLYGQguAihivLcCq9bV3UZ4kzG5SQWEYmkM2mN-ISe63hEJ_cukKsvEYL_Qt6qTF1DvA9GLVWY7-qOtsI06XFr9Ib857a-1jQjQs7hHS2jrMfxbjGm07UHEPpvHfae9jE4BE2la6QdwIQIelJjp1NyAHkjt7rR-kmmed6cm5axMog-sWcpiMELKexHHUijYU2qwU2NV5v4Nt5DHnW_gGNlt5hj7jDVEZ1mVs6mDkRAOq9QpWdBBeRsaYmwQtvnuw="  # Replace with your session string, e.g., "1BVtsO..."
+session_string = os.getenv("TELEGRAM_SESSION_STRING", "1BVtsOHkBuz4_Ji7QXzid2bKSXUxtjVR8QrYlu7I5IwK4QgwBGem5h3-uHUIYLDuShG2eHouBckZ7tBf12oIo5OG51mE2T85PLYGQguAihivLcCq9bV3UZ4kzG5SQWEYmkM2mN-ISe63hEJ_cukKsvEYL_Qt6qTF1DvA9GLVWY7-qOtsI06XFr9Ib857a-1jQjQs7hHS2jrMfxbjGm07UHEPpvHfae9jE4BE2la6QdwIQIelJjp1NyAHkjt7rR-kmmed6cm5axMog-sWcpiMELKexHHUijYU2qwU2NV5v4Nt5DHnW_gGNlt5hj7jDVEZ1mVs6mDkRAOq9QpWdBBeRsaYmwQtvnuw=")  # Use environment variable for security
 
 # Sources Configuration
 source_groups = [-1002410570317, -1001878543352]  # Add source group IDs
@@ -45,11 +46,12 @@ selenium_options = Options()
 selenium_options.add_argument('--headless')
 selenium_options.add_argument('--no-sandbox')
 selenium_options.add_argument('--disable-dev-shm-usage')
-driver = webdriver.Chrome(options=selenium_options)
+selenium_options.binary_location = "/opt/render/project/.render/chrome/google-chrome"
+driver = webdriver.Chrome(options=selenium_options, executable_path="/usr/local/bin/chromedriver")
 
-# CC patterns (unchanged)
+# CC patterns
 cc_patterns = [
-    r'(?:𝗖𝗖|CC)\s*➼\s*(\d{13,16})\|(\d{1,2})\|(\d{2,4})\|(\d{3,4})',
+        r'(?:𝗖𝗖|CC)\s*➼\s*(\d{13,16})\|(\d{1,2})\|(\d{2,4})\|(\d{3,4})',
     
     r'[•\*\-]\s*CC\s+(\d{13,16})\|(\d{1,2})\|(\d{2,4})\|(\d{3,4})',
 
@@ -98,6 +100,7 @@ cc_patterns = [
     # Format 7: Card: 5289460011885479 Exp. month: 9 Exp. year: 25 CVV: 350
     r'Card:?\s*(\d{13,16})\s*Exp\. month:?\s*(\d{1,2})\s*Exp\. year:?\s*(\d{2,4})\s*CVV:?\s*(\d{3,4})',
     r'(\d{13,16})[\s|/|\-|~]?\s*(\d{1,2})[\s|/|\-|~]?\s*(\d{2,4})[\s|/|\-|~]?\s*(\d{3,4})',
+    r'(\d{13,16})[\s|/|\-|~]?\s*(\d{1,2})[\s|/|\-|~]?\s*(\d{2,4})[\s|/|\-|~]?\s*(\d{3,4})',
     r'(\d{13,16})\s(\d{1,2})\s(\d{2,4})\s(\d{3,4})',
     r'(\d{13,16})\n(\d{1,2})\n(\d{2,4})\n(\d{3,4})',
     r'(\d{13,16})\n(\d{1,2})[/|-](\d{2,4})\n(\d{3,4})',
@@ -139,13 +142,7 @@ def format_cc(match):
 # Function to log in to Telegram Web
 def login_to_telegram():
     driver.get("https://web.telegram.org/k/")
-    # Add login logic if required (phone number, verification code)
-    # Example:
-    # phone_input = WebDriverWait(driver, 10).until(
-    #     EC.presence_of_element_located((By.ID, "auth-phone-number-input"))
-    # )
-    # phone_input.send_keys("your_phone_number")
-    # driver.find_element(By.ID, "auth-phone-number-button").click()
+    # Customize login logic (phone number, verification code)
     time.sleep(10)  # Adjust based on login time
 
 # Function to click the "View Card" button
