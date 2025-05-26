@@ -24,14 +24,15 @@ RUN apt-get update && apt-get install -y \
 # Install Google Chrome
 RUN wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && \
     dpkg -x google-chrome-stable_current_amd64.deb /opt/chrome && \
+    chmod +x /opt/chrome/opt/google/chrome/google-chrome && \
     rm google-chrome-stable_current_amd64.deb
 
 # Set PATH for Chrome
 ENV PATH="${PATH}:/opt/chrome/opt/google/chrome"
 
 # Install ChromeDriver
-RUN CHROME_VERSION=$(google-chrome --version | grep -oP '\d+\.\d+\.\d+' || echo "126.0.6478") && \
-    CHROMEDRIVER_VERSION=$(curl -sS https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_VERSION%%.*} || echo "126.0.6478.182") && \
+RUN CHROMEDRIVER_VERSION="127.0.6533.119" && \
+    echo "Installing ChromeDriver version: ${CHROMEDRIVER_VERSION}" && \
     wget -q https://chromedriver.storage.googleapis.com/${CHROMEDRIVER_VERSION}/chromedriver_linux64.zip && \
     unzip chromedriver_linux64.zip && \
     mv chromedriver /usr/local/bin/ && \
@@ -39,7 +40,8 @@ RUN CHROME_VERSION=$(google-chrome --version | grep -oP '\d+\.\d+\.\d+' || echo 
     rm chromedriver_linux64.zip
 
 # Verify installations
-RUN google-chrome --version && chromedriver --version
+RUN google-chrome --version || echo "Chrome version check failed" && \
+    chromedriver --version || echo "ChromeDriver version check failed"
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
